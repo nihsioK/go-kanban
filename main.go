@@ -95,6 +95,9 @@ func main() {
 		DBHOST, DBPORT, DBUSER, DBPASSWORD, DBNAME)
 
 	DB, err := sql.Open("postgres", connStr)
+	DB.SetMaxOpenConns(20)
+	DB.SetMaxIdleConns(10)
+	DB.SetConnMaxLifetime(time.Minute * 5)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -115,9 +118,10 @@ func main() {
 
 	log.Println("Setting up routes...")
 
+	router.Handle("/login", loggingMiddleware(http.HandlerFunc(app.login))).Methods("POST")
+
 	userChain := alice.New(loggingMiddleware, validateMiddleware(userSchema))
 	router.Handle("/register", userChain.ThenFunc(app.register)).Methods("POST")
-	router.Handle("/login", userChain.ThenFunc(app.login)).Methods("POST")
 
 	projectChain := alice.New(loggingMiddleware, app.jwtMiddleware)
 	router.Handle("/projects", projectChain.ThenFunc(app.getProjects)).Methods("GET")
@@ -268,7 +272,7 @@ func (a App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), 8)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error hashing password")
