@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
     networks:
       - go-kanban-network
     healthcheck:
