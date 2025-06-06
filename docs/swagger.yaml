@@ -1,0 +1,61 @@
+basePath: /
+definitions:
+  main.Credentials:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  main.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  main.UserResponse:
+    properties:
+      id:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for managing users and projects
+  title: Project Management API
+  version: "1.0"
+paths:
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create user with username and password
+      parameters:
+      - description: User credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/main.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - users
+schemes:
+- http
+swagger: "2.0"

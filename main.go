@@ -1,3 +1,10 @@
+// @title           Project Management API
+// @version         1.0
+// @description     API for managing users and projects
+// @host            localhost:8080
+// @BasePath        /
+// @schemes         http
+
 package main
 
 import (
@@ -18,6 +25,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/justinas/alice"
 	"github.com/lib/pq"
+	_ "github.com/nihsioK/go-kanban/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/xeipuuv/gojsonschema"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -115,6 +124,7 @@ func main() {
 	log.Println("Starting server...")
 
 	router := mux.NewRouter()
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	log.Println("Setting up routes...")
 
@@ -262,7 +272,15 @@ func (a App) generateToken(username string, id string) (string, error) {
 	return tokenString, nil
 }
 
-// register function to handle user registration
+// @Summary Register a new user
+// @Description Create user with username and password
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body Credentials true "User credentials"
+// @Success 200 {object} UserResponse
+// @Failure 400 {object} ErrorResponse
+// @Router /register [post]
 func (a App) register(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 
