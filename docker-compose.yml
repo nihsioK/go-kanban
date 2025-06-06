@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: go-kanban-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: db_name
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - go-kanban-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  go-kanban:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-kanban-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DBNAME=db_name
+      - DBHOST=postgres
+      - DBPORT=5432
+      - DBUSER=postgres
+      - DBPASSWORD=postgres
+      - JWT_SECRET=some_super_secret_key
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - go-kanban-network
+
+volumes:
+  postgres_data:
+
+networks:
+  go-kanban-network:
+    driver: bridge
