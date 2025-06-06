@@ -128,8 +128,8 @@ func main() {
 	router.Handle("/projects", projectChainWithValidation.ThenFunc(app.createProject)).Methods("POST")
 	router.Handle("/projects/{id}", projectChainWithValidation.ThenFunc(app.updateProject)).Methods("PUT")
 
-	log.Println("Listening on port 5000")
-	log.Fatal(http.ListenAndServe(":5000", router))
+	log.Println("Listening on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func loadSchema(filepath string) (string, error) {
