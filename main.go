@@ -293,20 +293,26 @@ func (a App) register(w http.ResponseWriter, r *http.Request) {
 
 // login
 func (a App) login(w http.ResponseWriter, r *http.Request) {
-	var creds Credentials
+	start := time.Now()
+	defer func() {
+		log.Printf("Total login duration: %s", time.Since(start))
+	}()
 
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
+	log.Println("Step 1: Decoding JSON")
+	var creds Credentials
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		log.Printf("Step 1 error: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
+	log.Println("Step 2: Fetching user from DB")
 	var storedCreds Credentials
 	var id string
-
-	err = a.DB.QueryRow("SELECT id, username, password FROM \"users\" WHERE username=$1", creds.Username).Scan(&id, &storedCreds.Username, &storedCreds.Password)
-
-	if err != nil {
+	if err := a.DB.QueryRow(
+		"SELECT id, username, password FROM \"users\" WHERE username=$1", creds.Username,
+	).Scan(&id, &storedCreds.Username, &storedCreds.Password); err != nil {
+		log.Printf("Step 2 error: %v", err)
 		if err == sql.ErrNoRows {
 			respondWithError(w, http.StatusUnauthorized, "Invalid username or password")
 			return
@@ -315,22 +321,26 @@ func (a App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(storedCreds.Password), []byte(creds.Password))
-
-	if err != nil {
+	log.Println("Step 3: Comparing passwords")
+	if err := bcrypt.CompareHashAndPassword([]byte(storedCreds.Password), []byte(creds.Password)); err != nil {
+		log.Printf("Step 3 error: %v", err)
 		respondWithError(w, http.StatusUnauthorized, "Invalid username or password")
 		return
 	}
 
+	log.Println("Step 4: Generating token")
 	tokenString, err := a.generateToken(creds.Username, id)
-
 	if err != nil {
+		log.Printf("Step 4 error: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "Error generating token")
 		return
 	}
 
+	log.Println("Step 5: Sending response")
 	w.Header().Set("Content-type", "application/json")
-	json.NewEncoder(w).Encode(UserResponse{ID: id, Username: creds.Username, Token: tokenString})
+	if err := json.NewEncoder(w).Encode(UserResponse{ID: id, Username: creds.Username, Token: tokenString}); err != nil {
+		log.Printf("Step 5 error: %v", err)
+	}
 }
 
 // createProject
